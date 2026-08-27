@@ -20,3 +20,17 @@ jobs:
 
       - name: Build binary
         run: bash ./scripts/buildprod.sh
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v3'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
+
+      - name: 'Deploy docker image to artifact registry'
+        run: gcloud builds submit --tag us-central1-docker.pkg.dev/lively-tensor-506815-g4/notely-ar-repo/notely:latest .
