@@ -8,7 +8,13 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    
+
+    env:
+      CLOUDSDK_CORE_PROJECT: lively-tensor-506815-g4
+      CLOUDSDK_RUN_REGION: us-central1
+      AR_REPO: notely-ar-repo
+      SERVICE: notely
+
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -32,5 +38,14 @@ jobs:
       - name: 'Use gcloud CLI'
         run: 'gcloud info'
 
-      - name: 'Deploy docker image to artifact registry'
-        run: gcloud builds submit --tag us-central1-docker.pkg.dev/lively-tensor-506815-g4/notely-ar-repo/notely:latest .
+      # Assembled once and exported for the remaining steps, so the registry
+      # path is never spelled out twice.
+      - name: Compose image tag
+        run: |
+          echo "IMAGE=${CLOUDSDK_RUN_REGION}-docker.pkg.dev/${CLOUDSDK_CORE_PROJECT}/${AR_REPO}/${SERVICE}:latest" >> "$GITHUB_ENV"
+
+      - name: Deploy docker image to artifact registry
+        run: gcloud builds submit --tag "$IMAGE" .
+
+      - name: Deploy to Cloud Run
+        run: gcloud run deploy "$SERVICE" --image "$IMAGE" --allow-unauthenticated --max-instances=4
